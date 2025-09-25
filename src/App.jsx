@@ -10,9 +10,15 @@ function App() {
     {input : 'Hello ,Add your first task', completed: true}
   ]);
   const [selectedTab,setSelectedTab]=useState('Open');
+  const [history, setHistory] = useState([]);
+
+  function saveToHistory(currTodos) {
+    setHistory((prev) => [...prev, currTodos]);
+  }
 
   function handleAddTodo(newTodo){
     const newTodoList=[...todos,{input:newTodo,completed: false}];
+    saveToHistory(todos);
     setTodos(newTodoList);
     handleSaveData(newTodoList);
     
@@ -23,6 +29,7 @@ function App() {
     let completedtodo=todos[index];
     completedtodo['completed']=!completedtodo['completed'];
     newTodoList[index]=completedtodo;
+    saveToHistory(todos);
     setTodos(newTodoList);
     handleSaveData(newTodoList);
 
@@ -31,7 +38,8 @@ function App() {
   function handleDeleteTodo(index){
     let newTodoList=todos.filter((val,valIndex)=>{
       return valIndex!==index;
-    })
+    });
+    saveToHistory(todos);
     setTodos(newTodoList);
     handleSaveData(newTodoList);
   }
@@ -40,11 +48,30 @@ function App() {
     localStorage.setItem('todo-app',JSON.stringify({todos:currtodos}));
   }
 
+  function handleUndo() {
+    if (history.length === 0) return; 
+    const previousTodos = history[history.length - 1];
+    setHistory((prev) => prev.slice(0, -1)); 
+    setTodos(previousTodos);
+    handleSaveData(previousTodos);
+  }
+
   useEffect(()=>{
     if(!localStorage || !localStorage.getItem('todo-app'))return;
     let db=JSON.parse(localStorage.getItem('todo-app'));
     setTodos(db.todos);
   },[])
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [history]);
 
   return (
     <>
